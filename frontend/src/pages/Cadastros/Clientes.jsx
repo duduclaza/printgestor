@@ -30,8 +30,13 @@ const CATEGORIAS_CLIENTE = ['Escritório', 'Indústria', 'Comércio', 'Serviços
 
 const TEMPLATE_COLUMNS = [
     'Nome Fantasia', 'Razão Social', 'Tipo Cadastro', 'CNPJ', 'Inscrição Estadual', 'IE Isento',
-    'CEP', 'Logradouro', 'Número', 'Bairro', 'Cidade', 'Estado',
-    'Contato Nome', 'Contato Telefone', 'Contato Email', 'Situação'
+    'Inscrição Municipal', 'CNAE', 'Regime Tributário', 'Porte Empresa', 'Data Abertura', 'Situação',
+    'UF Cadastro', 'Tipo Contribuinte', 'Consumidor Final', 'Indicador IE', 'SUFRAMA', 'Obs Fiscais',
+    'CEP', 'Logradouro', 'Número', 'Complemento', 'Bairro', 'Cidade', 'Estado',
+    'Contato Nome', 'Contato Cargo', 'Contato Telefone', 'Contato WhatsApp', 'Contato Email',
+    'Financeiro Nome', 'Financeiro Email', 'Financeiro Telefone',
+    'Forma Pagamento', 'Prazo Pagamento', 'Limite Crédito', 'Política Desconto', 'Tabela Preço',
+    'Categoria', 'Região Rota', 'Observações'
 ];
 
 const INITIAL_FORM = {
@@ -198,10 +203,29 @@ function Clientes() {
 
     const downloadTemplate = () => {
         try {
-            const exampleRow = ['Empresa Exemplo', 'Empresa Exemplo LTDA', 'Matriz', '00.000.000/0001-00', '123456789', 'N', '01310-100', 'Av Paulista', '1000', 'Bela Vista', 'São Paulo', 'SP', 'João Silva', '11999999999', 'joao@email.com', 'Ativo'];
-            const wsData = [TEMPLATE_COLUMNS, exampleRow];
+            const exemplo1 = [
+                'Print Gestor LTDA', 'Print Gestor Soluções em TI LTDA', 'Matriz', '12.345.678/0001-90', '123456789', 'N',
+                '12345678', '1234567', 'Simples Nacional', 'ME', '2020-01-15', 'Ativo',
+                'SP', 'Contribuinte ICMS', 'N', '1 - Contribuinte', '', '',
+                '01310-100', 'Av Paulista', '1000', 'Sala 101', 'Bela Vista', 'São Paulo', 'SP',
+                'João Silva', 'Diretor Comercial', '11999999999', '11999999999', 'joao@printgestor.com',
+                'Maria Santos', 'financeiro@printgestor.com', '1133333333',
+                'Boleto', '30/60/90', '50000', '5% à vista', 'Tabela A',
+                'Indústria', 'Zona Sul', 'Cliente preferencial'
+            ];
+            const exemplo2 = [
+                'Tech Solutions', 'Tech Solutions Informática EIRELI', 'Filial', '98.765.432/0001-10', '987654321', 'N',
+                '87654321', '6201501', 'Lucro Presumido', 'EPP', '2018-06-20', 'Ativo',
+                'RJ', 'Contribuinte ICMS', 'N', '1 - Contribuinte', '', '',
+                '22041-080', 'Rua do Ouvidor', '50', '10º Andar', 'Centro', 'Rio de Janeiro', 'RJ',
+                'Carlos Mendes', 'Gerente de Compras', '21988888888', '21988888888', 'carlos@techsolutions.com',
+                'Ana Paula', 'contas@techsolutions.com', '2122222222',
+                'PIX', '30 dias', '30000', '3% à vista', 'Tabela B',
+                'Comércio', 'Zona Centro', 'Atendimento prioritário'
+            ];
+            const wsData = [TEMPLATE_COLUMNS, exemplo1, exemplo2];
             const ws = XLSX.utils.aoa_to_sheet(wsData);
-            ws['!cols'] = TEMPLATE_COLUMNS.map(() => ({ wch: 20 }));
+            ws['!cols'] = TEMPLATE_COLUMNS.map(() => ({ wch: 22 }));
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, 'Clientes');
             const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
@@ -230,14 +254,50 @@ function Clientes() {
                 const duplicado = cnpj && (cnpjsExistentes.includes(cnpj) || cnpjsNaImportacao.includes(cnpj));
                 if (cnpj) cnpjsNaImportacao.push(cnpj);
                 return {
-                    nomeFantasia: row['Nome Fantasia'] || '', razaoSocial: row['Razão Social'] || '',
-                    tipoCadastro: row['Tipo Cadastro'] || 'Matriz', cnpj, inscricaoEstadual: row['Inscrição Estadual'] || '',
-                    ieIsento: row['IE Isento'] === 'S', cep: row['CEP'] || '', logradouro: row['Logradouro'] || '',
-                    numero: row['Número']?.toString() || '', bairro: row['Bairro'] || '', cidade: row['Cidade'] || '',
-                    estado: row['Estado'] || '', contatoNome: row['Contato Nome'] || '',
-                    contatoTelefone: row['Contato Telefone']?.toString() || '', contatoEmail: row['Contato Email'] || '',
-                    situacao: row['Situação'] || 'Ativo', _valid: !!row['Nome Fantasia'] && !duplicado,
-                    _duplicado: duplicado, _row: i + 2
+                    nomeFantasia: row['Nome Fantasia'] || '',
+                    razaoSocial: row['Razão Social'] || '',
+                    tipoCadastro: row['Tipo Cadastro'] || 'Matriz',
+                    cnpj,
+                    inscricaoEstadual: row['Inscrição Estadual'] || '',
+                    ieIsento: row['IE Isento'] === 'S',
+                    inscricaoMunicipal: row['Inscrição Municipal'] || '',
+                    cnae: row['CNAE'] || '',
+                    regimeTributario: row['Regime Tributário'] || '',
+                    porteEmpresa: row['Porte Empresa'] || '',
+                    dataAbertura: row['Data Abertura'] || '',
+                    situacao: row['Situação'] || 'Ativo',
+                    ufCadastro: row['UF Cadastro'] || '',
+                    tipoContribuinte: row['Tipo Contribuinte'] || '',
+                    consumidorFinal: row['Consumidor Final'] === 'S',
+                    indicadorIE: row['Indicador IE'] || '',
+                    suframa: row['SUFRAMA'] || '',
+                    obsFiscais: row['Obs Fiscais'] || '',
+                    cep: row['CEP'] || '',
+                    logradouro: row['Logradouro'] || '',
+                    numero: row['Número']?.toString() || '',
+                    complemento: row['Complemento'] || '',
+                    bairro: row['Bairro'] || '',
+                    cidade: row['Cidade'] || '',
+                    estado: row['Estado'] || '',
+                    contatoNome: row['Contato Nome'] || '',
+                    contatoCargo: row['Contato Cargo'] || '',
+                    contatoTelefone: row['Contato Telefone']?.toString() || '',
+                    contatoWhatsapp: row['Contato WhatsApp']?.toString() || '',
+                    contatoEmail: row['Contato Email'] || '',
+                    financeiroNome: row['Financeiro Nome'] || '',
+                    financeiroEmail: row['Financeiro Email'] || '',
+                    financeiroTelefone: row['Financeiro Telefone']?.toString() || '',
+                    formaPagamento: row['Forma Pagamento'] || '',
+                    prazoPagamento: row['Prazo Pagamento'] || '',
+                    limiteCredito: row['Limite Crédito'] || '',
+                    politicaDesconto: row['Política Desconto'] || '',
+                    tabelaPreco: row['Tabela Preço'] || '',
+                    categoria: row['Categoria'] || '',
+                    regiaoRota: row['Região Rota'] || '',
+                    observacoes: row['Observações'] || '',
+                    _valid: !!row['Nome Fantasia'] && !duplicado,
+                    _duplicado: duplicado,
+                    _row: i + 2
                 };
             }).filter(c => c.nomeFantasia);
             setImportData(converted);
@@ -247,16 +307,22 @@ function Clientes() {
         e.target.value = '';
     };
 
-    const confirmImport = () => {
+    const confirmImport = async () => {
         const valid = importData.filter(c => c._valid);
         if (!valid.length) return alert('Nenhum cliente válido!');
-        const newClientes = valid.map((c, i) => {
-            const { _valid, _duplicado, _row, ...data } = c;
-            return { ...INITIAL_FORM, ...data, id: Date.now() + i, codigoInterno: getNextCodigo(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
-        });
-        saveClientes([...clientes, ...newClientes]);
-        setShowImportModal(false);
-        alert(`${newClientes.length} cliente(s) importado(s)!`);
+        try {
+            let imported = 0;
+            for (const cliente of valid) {
+                const { _valid, _duplicado, _row, ...data } = cliente;
+                await api.post('/clientes', data);
+                imported++;
+            }
+            fetchClientes();
+            setShowImportModal(false);
+            alert(`${imported} cliente(s) importado(s) com sucesso!`);
+        } catch (error) {
+            alert('Erro ao importar: ' + error.message);
+        }
     };
 
     // Section Header Component
