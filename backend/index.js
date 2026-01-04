@@ -1,11 +1,16 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 dotenv.config();
 
 import sequelize from './config/database.js';
 import './models/index.js';
 import clientesRoutes from './routes/clientes.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -14,12 +19,21 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Routes
+// API Routes
 app.use('/api/clientes', clientesRoutes);
 
-// Test Route
 app.get('/api/status', (req, res) => {
     res.json({ message: 'Backend is running!', status: 'OK' });
+});
+
+// Serve static files from frontend build (production)
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Handle SPA - for any non-API route, serve index.html
+app.get('*', (req, res) => {
+    if (!req.path.startsWith('/api')) {
+        res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    }
 });
 
 // Database Sync and Server Start
