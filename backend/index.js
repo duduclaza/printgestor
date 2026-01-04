@@ -1,7 +1,10 @@
 import express from 'express';
 import cors from 'cors';
+import dotenv from 'dotenv';
+dotenv.config();
+
 import sequelize from './config/database.js';
-import './models/index.js'; // Import models to ensure they are registered
+import './models/index.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -19,13 +22,10 @@ app.get('/api/status', (req, res) => {
 const startServer = async () => {
     try {
         await sequelize.authenticate();
-        console.log('Database connection has been established successfully.');
+        console.log('Database connection established successfully.');
 
-        // Sync all models (create tables if they don't exist)
-        // force: false ensures we don't drop existing tables
-        // alter: true updates tables if models change (use with caution in production)
         await sequelize.sync({ force: false, alter: true });
-        console.log('Database synchronized.');
+        console.log('Database synchronized. Tables created/updated.');
 
         app.listen(PORT, () => {
             console.log(`Server is running on port ${PORT}`);
