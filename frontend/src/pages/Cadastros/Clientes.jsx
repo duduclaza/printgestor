@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { storage, STORAGE_KEYS } from '../../services/storage';
+import api from '../../services/api';
 import * as XLSX from 'xlsx';
 import {
     PlusIcon,
@@ -79,14 +79,23 @@ function Clientes() {
     });
     const fileInputRef = useRef(null);
 
-    useEffect(() => {
-        setClientes(storage.get(STORAGE_KEYS.CLIENTES) || []);
-    }, []);
+    const [loading, setLoading] = useState(false);
 
-    const saveClientes = (newClientes) => {
-        storage.set(STORAGE_KEYS.CLIENTES, newClientes);
-        setClientes(newClientes);
+    const fetchClientes = async () => {
+        try {
+            setLoading(true);
+            const data = await api.get('/clientes');
+            setClientes(data);
+        } catch (error) {
+            console.error('Erro ao carregar clientes:', error);
+        } finally {
+            setLoading(false);
+        }
     };
+
+    useEffect(() => {
+        fetchClientes();
+    }, []);
 
     const getNextCodigo = () => {
         const codigos = clientes.map((c) => parseInt(c.codigoInterno, 10)).filter((n) => !isNaN(n));
@@ -116,9 +125,14 @@ function Clientes() {
         setShowModal(true);
     };
 
-    const handleDelete = (id) => {
+    const handleDelete = async (id) => {
         if (confirm('Deseja realmente excluir este cliente?')) {
-            saveClientes(clientes.filter((c) => c.id !== id));
+            try {
+                await api.delete(`/clientes/${id}`);
+                fetchClientes();
+            } catch (error) {
+                alert('Erro ao excluir cliente: ' + error.message);
+            }
         }
     };
 
@@ -164,16 +178,19 @@ function Clientes() {
         } catch (err) { console.error('Erro ao buscar CEP:', err); }
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!form.nomeFantasia.trim()) return alert('Nome Fantasia é obrigatório!');
-        const clienteData = {
-            ...form,
-            id: editingId || Date.now(),
-            updatedAt: new Date().toISOString(),
-            createdAt: editingId ? form.createdAt : new Date().toISOString(),
-        };
-        saveClientes(editingId ? clientes.map((c) => (c.id === editingId ? clienteData : c)) : [...clientes, clienteData]);
-        setShowModal(false);
+        try {
+            if (editingId) {
+                await api.put(`/clientes/${editingId}`, form);
+            } else {
+                await api.post('/clientes', form);
+            }
+            fetchClientes();
+            setShowModal(false);
+        } catch (error) {
+            alert('Erro ao salvar cliente: ' + error.message);
+        }
     };
 
     // Import functions
